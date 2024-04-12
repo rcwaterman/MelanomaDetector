@@ -1,0 +1,10 @@
+#Data locations
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+#Number of categories
+nc: 1
+
+#Category names
+names: ["Mole"]
