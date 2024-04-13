@@ -8,6 +8,32 @@ from torch.cuda.amp import autocast, GradScaler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from kaggle.api.kaggle_api_extended import KaggleApi
 
+#Define image size. Cursory look at data shows image sizes of 224 x 224. Shrink this down to speed up training.
+IMG_SIZE = 168
+
+def create_model(device):
+    #Instantiate the VGG model with default weights
+    model = models.vgg19()
+
+    #Uncomment to print model structure
+    """
+    child_counter = 0
+    for child in model.children():
+    print(" child", child_counter, "is:")
+    print(child)
+    child_counter += 1
+
+    print(f'\n{model.classifier[6]}\n')
+    """
+
+    # Modifying final classifier layer
+    model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
+
+    #Send model to device
+    model = model.to(device)
+
+    return model
+
 def main():
 
     #Pull the api key. Defualt key location is C:\\Users\"your_user"\.kaggle\kaggle.json
@@ -30,9 +56,6 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Using device : {device}')
 
-    #Define image size. Cursory look at data shows image sizes of 224 x 224. Shrink this down to speed up training.
-    img_size = 168
-
     #Model setup based on this notebook: https://www.kaggle.com/code/bhaveshmittal/cancer-detection-using-pytorch-96-accuracy/notebook
 
     # Training transformer
@@ -45,8 +68,8 @@ def main():
         transforms.RandomVerticalFlip(p = 0.3),
         
         #Resize all images to the previously defined image size
-        transforms.Resize(size = (img_size, img_size), antialias = True),
-        transforms.CenterCrop(size = (img_size, img_size)),
+        transforms.Resize(size = (IMG_SIZE, IMG_SIZE), antialias = True),
+        transforms.CenterCrop(size = (IMG_SIZE, IMG_SIZE)),
         
         #Load image into tensor and normalize
         transforms.ToTensor(),
@@ -56,8 +79,8 @@ def main():
     # Validation transformer
     val_transformer = transforms.Compose([
         #Resize all images to the previously defined image size
-        transforms.Resize(size = (img_size, img_size), antialias = True),
-        transforms.CenterCrop(size = (img_size, img_size)),
+        transforms.Resize(size = (IMG_SIZE, IMG_SIZE), antialias = True),
+        transforms.CenterCrop(size = (IMG_SIZE, IMG_SIZE)),
 
         #Load image into tensor and normalize
         transforms.ToTensor(),
@@ -74,24 +97,7 @@ def main():
     trainLoader = DataLoader(train_data, batch_size = batch_size, shuffle = True, num_workers = 4)
     valLoader = DataLoader(val_data, batch_size = batch_size, shuffle = False, num_workers = 4)
 
-    #Instantiate the VGG model with default weights
-    model = models.vgg19()
-
-    """
-    child_counter = 0
-    for child in model.children():
-    print(" child", child_counter, "is:")
-    print(child)
-    child_counter += 1
-
-    print(f'\n{model.classifier[6]}\n')
-    """
-
-    # Modifying final classifier layer
-    model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
-
-    #Send model to device
-    model = model.to(device)
+    model = create_model(device)
 
     # Defining the loss, optimizer, and annealer
     criterion = nn.BCEWithLogitsLoss()
