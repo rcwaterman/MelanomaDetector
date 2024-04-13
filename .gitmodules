@@ -1,3 +1,0 @@
-[submodule "utils/YAML_Annotation"]
-	path = python/utils/YAML_Annotation
-	url = https://github.com/rcwaterman/YAML_Annotation.git
