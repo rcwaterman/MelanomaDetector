@@ -1,6 +1,6 @@
 #Data locations
 train: ../images/train
-val: ../images/vaild
+val: ../images/valid
 test: ../images/test
 
 #Number of categories

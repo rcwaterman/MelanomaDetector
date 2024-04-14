@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 #Paths
 image_dir = filedialog.askdirectory()
 image_list = [os.path.join(image_dir,file) for file in os.listdir(image_dir)]
-#model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\Pre-Trained\melanoma_resnet50_v4_168.pt')
-model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_resnet50.pt')
+model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\Pre-Trained\melanoma_resnet50_v6_168.pt')
+#model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_resnet50.pt')
 
 #Define image size. Cursory look at data shows image sizes of 224 x 224. Shrink this down to speed up training.
 IMG_SIZE = 168
