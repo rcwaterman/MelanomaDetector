@@ -121,71 +121,76 @@ def main():
     print("Starting training...")
 
     for epoch in range(epochs):
-            # Training phase
-            model.train()
-            runningLoss = 0.0
+        # Training phase
+        model.train()
+        runningLoss = 0.0
 
-            print(f'Beginning epoch {epoch}...')
+        print(f'Beginning epoch {epoch+1}...')
 
-            for inputs, labels in trainLoader:
+        for inputs, labels in trainLoader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            labels = labels.unsqueeze(1).float()
+
+            optimizer.zero_grad()
+
+            with autocast():
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+            runningLoss += loss.item()
+            print(f'Batch Loss: {loss.item()}')
+
+        trainLoss = runningLoss / len(trainLoader)
+        print(f'Epoch {epoch + 1}/{epochs} - Training Loss : {trainLoss:.2f}')
+        trainLosses.append(trainLoss)
+
+        # Validation phase
+        model.eval()
+        with torch.no_grad():
+            valLoss = 0.0
+            correct = total = 0
+
+            for inputs, labels in valLoader:
                 inputs, labels = inputs.to(device), labels.to(device)
                 labels = labels.unsqueeze(1).float()
 
-                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                valLoss += loss.item()
 
-                with autocast():
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                predicted = (torch.sigmoid(outputs) > 0.5).float()
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
 
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
+            avgLoss = valLoss / len(valLoader)
+            accuracy = correct / total * 100
 
-                runningLoss += loss.item()
-                print(f'Batch Loss: {loss.item()}')
+            print(f'Validation Loss : {avgLoss:.2f} Validation Accuracy : {accuracy:.2f}%\n')
+            valLosses.append(avgLoss)
+            valAccs.append(accuracy)
 
-            trainLoss = runningLoss / len(trainLoader)
-            print(f'Epoch {epoch + 1}/{epochs} - Training Loss : {trainLoss:.2f}')
-            trainLosses.append(trainLoss)
+            # Early stopping
+            if avgLoss < bestLoss - minDelta:
+                bestLoss = avgLoss
+                currentPatience = 0
+            else:
+                currentPatience += 1
+                if currentPatience >= patience:
+                    print('Early stopping triggered.')
+                    break
 
-            # Validation phase
-            model.eval()
-            with torch.no_grad():
-                valLoss = 0.0
-                correct = total = 0
+            scheduler.step(avgLoss)
 
-                for inputs, labels in valLoader:
-                    inputs, labels = inputs.to(device), labels.to(device)
-                    labels = labels.unsqueeze(1).float()
+            #Save checkpoints
+            if (epoch+1)%2 == 0:
+                model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_resnet50.pt')
+                torch.save(model.state_dict(), model_path)
 
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-                    valLoss += loss.item()
-
-                    predicted = (torch.sigmoid(outputs) > 0.5).float()
-                    total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
-
-                avgLoss = valLoss / len(valLoader)
-                accuracy = correct / total * 100
-
-                print(f'Validation Loss : {avgLoss:.2f} Validation Accuracy : {accuracy:.2f}%\n')
-                valLosses.append(avgLoss)
-                valAccs.append(accuracy)
-
-                # Early stopping
-                if avgLoss < bestLoss - minDelta:
-                    bestLoss = avgLoss
-                    currentPatience = 0
-                else:
-                    currentPatience += 1
-                    if currentPatience >= patience:
-                        print('Early stopping triggered.')
-                        break
-
-                scheduler.step(avgLoss)
-
-    model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_vgg.pt')
+    model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_resnet50.pt')
 
     torch.save(model.state_dict(), model_path)
                 
