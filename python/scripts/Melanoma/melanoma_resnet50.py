@@ -2,8 +2,8 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import models, datasets, transforms
-from torchvision.models import vgg19, VGG19_Weights
+from torchvision import datasets, transforms
+from torchvision.models import resnet50, ResNet50_Weights
 from torch.utils.data import DataLoader, random_split
 from torch.cuda.amp import autocast, GradScaler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -14,21 +14,18 @@ IMG_SIZE = 168
 
 def create_model(device):
     #Instantiate the VGG model with default weights
-    model = models.vgg19(weights=VGG19_Weights)
+    model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
 
     #Uncomment to print model structure
-    """
+
     child_counter = 0
     for child in model.children():
-    print(" child", child_counter, "is:")
-    print(child)
-    child_counter += 1
-
-    print(f'\n{model.classifier[6]}\n')
-    """
+        print(" child", child_counter, "is:")
+        print(child)
+        child_counter += 1
 
     # Modifying final classifier layer
-    model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
+    #model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
 
     #Send model to device
     model = model.to(device)
