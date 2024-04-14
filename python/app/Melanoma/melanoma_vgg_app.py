@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 #Paths
 image_dir = filedialog.askdirectory()
 image_list = [os.path.join(image_dir,file) for file in os.listdir(image_dir)]
-model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_vgg.pt')
+model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_vgg_v1.pt')
 
 #Define image size. Cursory look at data shows image sizes of 224 x 224. Shrink this down to speed up training.
 IMG_SIZE = 168
@@ -77,7 +77,7 @@ def main():
                                                                 std = [ 1., 1., 1. ]),
                                             ])
             inp = invTrans(inp)
-            img = inp.squeeze(0).mT
+            img = inp.squeeze(0).T
             inp, lab = inp.to(device), lab.to(device)
             start = time.time()
             pred = model(inp)
