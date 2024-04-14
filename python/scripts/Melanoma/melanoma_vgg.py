@@ -2,8 +2,8 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import models, datasets, transforms
-from torchvision.models import vgg19, VGG19_Weights
+from torchvision import datasets, transforms
+from torchvision.models import resnet50, ResNet50_Weights
 from torch.utils.data import DataLoader, random_split
 from torch.cuda.amp import autocast, GradScaler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -14,21 +14,18 @@ IMG_SIZE = 168
 
 def create_model(device):
     #Instantiate the VGG model with default weights
-    model = models.vgg19(weights=VGG19_Weights)
+    model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
 
     #Uncomment to print model structure
-    """
+
     child_counter = 0
     for child in model.children():
-    print(" child", child_counter, "is:")
-    print(child)
-    child_counter += 1
-
-    print(f'\n{model.classifier[6]}\n')
-    """
+        print(" child", child_counter, "is:")
+        print(child)
+        child_counter += 1
 
     # Modifying final classifier layer
-    model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
+    #model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
 
     #Send model to device
     model = model.to(device)
@@ -124,71 +121,76 @@ def main():
     print("Starting training...")
 
     for epoch in range(epochs):
-            # Training phase
-            model.train()
-            runningLoss = 0.0
+        # Training phase
+        model.train()
+        runningLoss = 0.0
 
-            print(f'Beginning epoch {epoch}...')
+        print(f'Beginning epoch {epoch+1}...')
 
-            for inputs, labels in trainLoader:
+        for inputs, labels in trainLoader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            labels = labels.unsqueeze(1).float()
+
+            optimizer.zero_grad()
+
+            with autocast():
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+            runningLoss += loss.item()
+            print(f'Batch Loss: {loss.item()}')
+
+        trainLoss = runningLoss / len(trainLoader)
+        print(f'Epoch {epoch + 1}/{epochs} - Training Loss : {trainLoss:.2f}')
+        trainLosses.append(trainLoss)
+
+        # Validation phase
+        model.eval()
+        with torch.no_grad():
+            valLoss = 0.0
+            correct = total = 0
+
+            for inputs, labels in valLoader:
                 inputs, labels = inputs.to(device), labels.to(device)
                 labels = labels.unsqueeze(1).float()
 
-                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                valLoss += loss.item()
 
-                with autocast():
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
+                predicted = (torch.sigmoid(outputs) > 0.5).float()
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
 
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
+            avgLoss = valLoss / len(valLoader)
+            accuracy = correct / total * 100
 
-                runningLoss += loss.item()
-                print(f'Batch Loss: {loss.item()}')
+            print(f'Validation Loss : {avgLoss:.2f} Validation Accuracy : {accuracy:.2f}%\n')
+            valLosses.append(avgLoss)
+            valAccs.append(accuracy)
 
-            trainLoss = runningLoss / len(trainLoader)
-            print(f'Epoch {epoch + 1}/{epochs} - Training Loss : {trainLoss:.2f}')
-            trainLosses.append(trainLoss)
+            # Early stopping
+            if avgLoss < bestLoss - minDelta:
+                bestLoss = avgLoss
+                currentPatience = 0
+            else:
+                currentPatience += 1
+                if currentPatience >= patience:
+                    print('Early stopping triggered.')
+                    break
 
-            # Validation phase
-            model.eval()
-            with torch.no_grad():
-                valLoss = 0.0
-                correct = total = 0
+            scheduler.step(avgLoss)
 
-                for inputs, labels in valLoader:
-                    inputs, labels = inputs.to(device), labels.to(device)
-                    labels = labels.unsqueeze(1).float()
+            #Save checkpoints
+            if (epoch+1)%2 == 0:
+                model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_vgg19.pt')
+                torch.save(model.state_dict(), model_path)
 
-                    outputs = model(inputs)
-                    loss = criterion(outputs, labels)
-                    valLoss += loss.item()
-
-                    predicted = (torch.sigmoid(outputs) > 0.5).float()
-                    total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
-
-                avgLoss = valLoss / len(valLoader)
-                accuracy = correct / total * 100
-
-                print(f'Validation Loss : {avgLoss:.2f} Validation Accuracy : {accuracy:.2f}%\n')
-                valLosses.append(avgLoss)
-                valAccs.append(accuracy)
-
-                # Early stopping
-                if avgLoss < bestLoss - minDelta:
-                    bestLoss = avgLoss
-                    currentPatience = 0
-                else:
-                    currentPatience += 1
-                    if currentPatience >= patience:
-                        print('Early stopping triggered.')
-                        break
-
-                scheduler.step(avgLoss)
-
-    model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_vgg.pt')
+    model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_vgg_19.pt')
 
     torch.save(model.state_dict(), model_path)
                 
