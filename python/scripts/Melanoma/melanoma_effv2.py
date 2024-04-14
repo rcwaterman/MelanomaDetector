@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
-from torchvision.models import convnext_small, ConvNeXt_Small_Weights
+from torchvision.models import efficientnet_v2_l, EfficientNet_V2_L_Weights
 from torch.utils.data import DataLoader, random_split
 from torch.cuda.amp import autocast, GradScaler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -14,7 +14,7 @@ IMG_SIZE = 224
 
 def create_model(device):
     #Instantiate the VGG model with default weights
-    model = convnext_small(weights=ConvNeXt_Small_Weights.IMAGENET1K_V1)
+    model = efficientnet_v2_l(weights=EfficientNet_V2_L_Weights.DEFAULT)
 
     #Uncomment to print model structure
     #This is necessary for modifying the classification layer
@@ -26,7 +26,7 @@ def create_model(device):
     """
 
     # Modifying final classifier layer
-    model.classifier[2] = nn.Linear(model.classifier[2].in_features, 1)
+    model.classifier[1] = nn.Linear(model.classifier[1].in_features, 1)
 
     #Uncomment to print model structure
     #This is necessary for modifying the classification layer
@@ -99,7 +99,7 @@ def main():
     val_data = datasets.ImageFolder(val_path, val_transformer)
 
     #Define the training parameters and load the data
-    batch_size = 32
+    batch_size = 16
     print("Loading Data...")
     trainLoader = DataLoader(train_data, batch_size = batch_size, shuffle = True, num_workers = 4)
     valLoader = DataLoader(val_data, batch_size = batch_size, shuffle = False, num_workers = 4)
@@ -196,10 +196,10 @@ def main():
 
             #Save checkpoints
             if (epoch+1)%2 == 0:
-                model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_convnext.pt')
+                model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_effv2.pt')
                 torch.save(model.state_dict(), model_path)
 
-    model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_convnext.pt')
+    model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_effv2.pt')
 
     torch.save(model.state_dict(), model_path)
                 
