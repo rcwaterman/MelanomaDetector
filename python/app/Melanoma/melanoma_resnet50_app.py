@@ -95,8 +95,8 @@ def main():
         else:
             running_accuracy.append(0)
         print(f'Prediction: {int(predicted[0])}', f"Label: {lab}", f'Evaluation Time: {sum(avg_time)/len(avg_time)}',f'Running Accuracy: {round((sum(running_accuracy)/len(running_accuracy))*100, 2)}%')
-        plt.imshow(img)
-        plt.show()
+        #plt.imshow(img)
+        #plt.show()
 
 if __name__ == '__main__':
     main()
