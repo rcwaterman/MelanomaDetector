@@ -10,7 +10,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 #Define image size. Cursory look at data shows image sizes of 224 x 224. Shrink this down to speed up training.
-IMG_SIZE = 128
+IMG_SIZE = 168
 
 def create_model(device):
     #Instantiate the VGG model with default weights
@@ -99,7 +99,7 @@ def main():
     val_data = datasets.ImageFolder(val_path, val_transformer)
 
     #Define the training parameters and load the data
-    batch_size = 128
+    batch_size = 64
     print("Loading Data...")
     trainLoader = DataLoader(train_data, batch_size = batch_size, shuffle = True, num_workers = 4)
     valLoader = DataLoader(val_data, batch_size = batch_size, shuffle = False, num_workers = 4)
@@ -108,7 +108,7 @@ def main():
 
     # Defining the loss, optimizer, and annealer
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.parameters(), lr = 0.001)
+    optimizer = optim.AdamW(model.parameters(), lr = 3e-3, weight_decay=0.3)
     scheduler = ReduceLROnPlateau(optimizer, threshold = 0.01, factor = 0.1, patience = 3, min_lr = 1e-5)
 
     patience = 5
@@ -125,7 +125,7 @@ def main():
     valAccs = []
 
     # Training loop
-    epochs = 30
+    epochs = 100
 
     print("Starting training...")
 
