@@ -3,18 +3,18 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
-from torchvision.models import vgg19, VGG19_Weights
+from torchvision.models import convnext_large, ConvNeXt_Large_Weights
 from torch.utils.data import DataLoader, random_split
 from torch.cuda.amp import autocast, GradScaler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 #Define image size. Cursory look at data shows image sizes of 224 x 224. Shrink this down to speed up training.
-IMG_SIZE = 224
+IMG_SIZE = 196
 
 def create_model(device):
     #Instantiate the VGG model with default weights
-    model = vgg19(weights=VGG19_Weights.DEFAULT)
+    model = convnext_large(weights=ConvNeXt_Large_Weights.IMAGENET1K_V1)
 
     #Uncomment to print model structure
     #This is necessary for modifying the classification layer
@@ -22,10 +22,11 @@ def create_model(device):
     for (name, layer) in model._modules.items():
         #iteration over outer layers
         print((name, layer))
+    
     """
 
     # Modifying final classifier layer
-    model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
+    model.classifier[2] = nn.Linear(model.classifier[2].out_features, 1)
 
     #Uncomment to print model structure
     #This is necessary for modifying the classification layer
@@ -195,10 +196,10 @@ def main():
 
             #Save checkpoints
             if (epoch+1)%2 == 0:
-                model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_vgg19.pt')
+                model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_resnet50.pt')
                 torch.save(model.state_dict(), model_path)
 
-    model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_vgg_19.pt')
+    model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_resnet50.pt')
 
     torch.save(model.state_dict(), model_path)
                 
