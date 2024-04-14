@@ -17,15 +17,23 @@ def create_model(device):
     model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
 
     #Uncomment to print model structure
-
-    child_counter = 0
-    for child in model.children():
-        print(" child", child_counter, "is:")
-        print(child)
-        child_counter += 1
+    #This is necessary for modifying the classification layer
+    """
+    for (name, layer) in model._modules.items():
+        #iteration over outer layers
+        print((name, layer))
+    """
 
     # Modifying final classifier layer
-    #model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
+    model._modules['fc'] = nn.Linear(model._modules['fc'].in_features, 1)
+
+    #Uncomment to print model structure
+    #This is necessary for modifying the classification layer
+    """
+    for (name, layer) in model._modules.items():
+        #iteration over outer layers
+        print((name, layer))
+    """
 
     #Send model to device
     model = model.to(device)
