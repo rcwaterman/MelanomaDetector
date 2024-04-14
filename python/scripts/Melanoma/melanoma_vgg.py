@@ -19,16 +19,21 @@ def create_model(device):
     #Uncomment to print model structure
     #This is necessary for modifying the classification layer
     """
-    child_counter = 0
-    for child in model.children():
-        print(" child", child_counter, "is:")
-        print(child)
-        child_counter += 1
-
+    for (name, layer) in model._modules.items():
+        #iteration over outer layers
+        print((name, layer))
     """
 
     # Modifying final classifier layer
     model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
+
+    #Uncomment to print model structure
+    #This is necessary for modifying the classification layer
+    """
+    for (name, layer) in model._modules.items():
+        #iteration over outer layers
+        print((name, layer))
+    """
 
     #Send model to device
     model = model.to(device)
