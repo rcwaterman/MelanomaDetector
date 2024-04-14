@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 #Paths
 image_dir = filedialog.askdirectory()
 image_list = [os.path.join(image_dir,file) for file in os.listdir(image_dir)]
-model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_resnet50_v4.pt')
+#model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\Pre-Trained\melanoma_resnet50_v4_168.pt')
+model_path = os.path.join(os.path.dirname(os.path.dirname(os.getcwd())), r'models\Melanoma\melanoma_resnet50.pt')
 
 #Define image size. Cursory look at data shows image sizes of 224 x 224. Shrink this down to speed up training.
 IMG_SIZE = 168
@@ -48,6 +49,17 @@ def create_model(device):
 
     return model
 
+def show_image(inp):
+    invTrans = transforms.Compose([ transforms.Normalize(mean = [ 0., 0., 0. ],
+                                                std = [ 1/0.229, 1/0.224, 1/0.225 ]),
+                                        transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ],
+                                                            std = [ 1., 1., 1. ]),
+                                        ])
+    inp = invTrans(inp)
+    img = inp.squeeze(0).T
+    plt.imshow(img)
+    plt.show()
+
 def main():
     #Define the device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -65,7 +77,7 @@ def main():
     
     print("Loading dataset...")
     data = datasets.ImageFolder(image_dir, transformer)
-    loader = DataLoader(data, batch_size = 500, shuffle = True)
+    loader = DataLoader(data, batch_size = 10000, shuffle = True)
     print("Load complete")
     # Display image and label.
     inputs, labels = next(iter(loader))
@@ -75,14 +87,8 @@ def main():
 
     for i in range(0, len(inputs), 1):
         inp, lab = inputs[i], labels[i]
-        invTrans = transforms.Compose([ transforms.Normalize(mean = [ 0., 0., 0. ],
-                                                std = [ 1/0.229, 1/0.224, 1/0.225 ]),
-                                        transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ],
-                                                            std = [ 1., 1., 1. ]),
-                                        ])
-        inp = invTrans(inp)
         inp = inp.unsqueeze(0)
-        img = inp.squeeze(0).T
+        img_inp = inp
         inp, lab = inp.to(device), lab.to(device)
         start = time.time()
         pred = model(inp)
@@ -94,9 +100,8 @@ def main():
             running_accuracy.append(1)
         else:
             running_accuracy.append(0)
-        print(f'Prediction: {int(predicted[0])}', f"Label: {lab}", f'Evaluation Time: {sum(avg_time)/len(avg_time)}',f'Running Accuracy: {round((sum(running_accuracy)/len(running_accuracy))*100, 2)}%')
-        #plt.imshow(img)
-        #plt.show()
+        print(f'Prediction: {int(predicted[0])}', f"Label: {lab}", f'Evaluation Time: {round(sum(avg_time)/len(avg_time),5)}',f'Running Accuracy: {round((sum(running_accuracy)/len(running_accuracy))*100, 2)}%')
+        #show_image(img_inp)
 
 if __name__ == '__main__':
     main()

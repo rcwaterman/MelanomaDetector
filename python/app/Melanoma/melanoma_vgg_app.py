@@ -8,7 +8,8 @@ import torch
 import torch.nn as nn
 import time
 import numpy as np
-from torchvision import models,transforms, datasets
+from torchvision import transforms, datasets
+from torchvision.models import vgg19
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
@@ -22,18 +23,7 @@ IMG_SIZE = 168
 
 def create_model(device):
     #Instantiate the VGG model with default weights
-    model = models.vgg19()
-
-    #Uncomment to print model structure
-    """
-    child_counter = 0
-    for child in model.children():
-    print(" child", child_counter, "is:")
-    print(child)
-    child_counter += 1
-
-    print(f'\n{model.classifier[6]}\n')
-    """
+    model = vgg19()
 
     # Modifying final classifier layer
     model.classifier[6] = nn.Linear(model.classifier[6].in_features, 1)
@@ -60,38 +50,38 @@ def main():
     
     print("Loading dataset...")
     data = datasets.ImageFolder(image_dir, transformer)
-    loader = DataLoader(data, batch_size = 1000, shuffle = True)
+    loader = DataLoader(data, batch_size = 500, shuffle = True)
     print("Load complete")
     # Display image and label.
-    inputs, labels = iter(loader)
+    inputs, labels = next(iter(loader))
     
     avg_time = []
     running_accuracy = []
 
-    for input, label in inputs, labels:
-        for i in range(0, input.size(0)-1, 1):
-            inp, lab = input[i].unsqueeze(0), label[i]
-            invTrans = transforms.Compose([ transforms.Normalize(mean = [ 0., 0., 0. ],
-                                                     std = [ 1/0.229, 1/0.224, 1/0.225 ]),
-                                            transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ],
-                                                                std = [ 1., 1., 1. ]),
-                                            ])
-            inp = invTrans(inp)
-            img = inp.squeeze(0).T
-            inp, lab = inp.to(device), lab.to(device)
-            start = time.time()
-            pred = model(inp)
-            end = time.time()
-            pred_time = end - start
-            avg_time.append(pred_time)
-            predicted = (torch.sigmoid(pred) > 0.5).float()
-            if predicted == lab:
-                running_accuracy.append(1)
-            else:
-                running_accuracy.append(0)
-            print(f'Prediction: {int(predicted[0])}', f"Label: {lab}", f'Evaluation Time: {sum(avg_time)/len(avg_time)}',f'Running Accuracy: {round((sum(running_accuracy)/len(running_accuracy))*100, 2)}%')
-            plt.imshow(img)
-            plt.show()
+    for i in range(0, len(inputs), 1):
+        inp, lab = inputs[i], labels[i]
+        invTrans = transforms.Compose([ transforms.Normalize(mean = [ 0., 0., 0. ],
+                                                std = [ 1/0.229, 1/0.224, 1/0.225 ]),
+                                        transforms.Normalize(mean = [ -0.485, -0.456, -0.406 ],
+                                                            std = [ 1., 1., 1. ]),
+                                        ])
+        inp = invTrans(inp)
+        inp = inp.unsqueeze(0)
+        img = inp.squeeze(0).T
+        inp, lab = inp.to(device), lab.to(device)
+        start = time.time()
+        pred = model(inp)
+        end = time.time()
+        pred_time = end - start
+        avg_time.append(pred_time)
+        predicted = (torch.sigmoid(pred) > 0.5).float()
+        if predicted == lab:
+            running_accuracy.append(1)
+        else:
+            running_accuracy.append(0)
+        print(f'Prediction: {int(predicted[0])}', f"Label: {lab}", f'Evaluation Time: {sum(avg_time)/len(avg_time)}',f'Running Accuracy: {round((sum(running_accuracy)/len(running_accuracy))*100, 2)}%')
+        #plt.imshow(img)
+        #plt.show()
 
 if __name__ == '__main__':
     main()

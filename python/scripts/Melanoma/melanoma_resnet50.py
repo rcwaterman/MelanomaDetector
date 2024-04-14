@@ -13,8 +13,8 @@ from kaggle.api.kaggle_api_extended import KaggleApi
 IMG_SIZE = 168
 
 def create_model(device):
-    #Instantiate the VGG model with default weights
-    model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
+    #Instantiate the VGG model without
+    model = resnet50(ResNet50_Weights.IMAGENET1K_V2)
 
     #Uncomment to print model structure
     #This is necessary for modifying the classification layer
