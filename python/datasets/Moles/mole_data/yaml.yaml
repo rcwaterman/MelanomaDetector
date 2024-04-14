@@ -1,7 +1,7 @@
 #Data locations
-train: ../train/images
-val: ../valid/images
-test: ../test/images
+train: ../images/train
+val: ../images/vaild
+test: ../images/test
 
 #Number of categories
 nc: 1
