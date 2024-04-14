@@ -107,10 +107,10 @@ def main():
 
     # Defining the loss, optimizer, and annealer
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.parameters(), lr = 0.001)
-    scheduler = ReduceLROnPlateau(optimizer, threshold = 0.01, factor = 0.1, patience = 3, min_lr = 1e-5)
+    optimizer = optim.AdamW(model.parameters(), lr = 3e-3, weight_decay=0.3)
+    scheduler = ReduceLROnPlateau(optimizer, threshold = 0.01, factor = 0.05, patience = 3, min_lr = 1e-5)
 
-    patience = 5
+    patience = 10
     minDelta = 0.01
     currentPatience = 0
     bestLoss = float('inf')
@@ -124,7 +124,7 @@ def main():
     valAccs = []
 
     # Training loop
-    epochs = 30
+    epochs = 100
 
     print("Starting training...")
 
